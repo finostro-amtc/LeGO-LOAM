@@ -256,11 +256,11 @@ public:
         downSizeFilterGlobalMapKeyPoses.setLeafSize(1.0, 1.0, 1.0); // for global map visualization
         downSizeFilterGlobalMapKeyFrames.setLeafSize(0.4, 0.4, 0.4); // for global map visualization
 
-        odomAftMapped.header.frame_id = "/camera_init";
-        odomAftMapped.child_frame_id = "/aft_mapped";
+        odomAftMapped.header.frame_id = "camera_init";
+        odomAftMapped.child_frame_id = "aft_mapped";
 
-        aftMappedTrans.frame_id_ = "/camera_init";
-        aftMappedTrans.child_frame_id_ = "/aft_mapped";
+        aftMappedTrans.frame_id_ = "camera_init";
+        aftMappedTrans.child_frame_id_ = "aft_mapped";
 
         allocateMemory();
     }
@@ -695,7 +695,7 @@ public:
             sensor_msgs::PointCloud2 cloudMsgTemp;
             pcl::toROSMsg(*cloudKeyPoses3D, cloudMsgTemp);
             cloudMsgTemp.header.stamp = ros::Time().fromSec(timeLaserOdometry);
-            cloudMsgTemp.header.frame_id = "/camera_init";
+            cloudMsgTemp.header.frame_id = "camera_init";
             pubKeyPoses.publish(cloudMsgTemp);
         }
 
@@ -703,20 +703,24 @@ public:
             sensor_msgs::PointCloud2 cloudMsgTemp;
             pcl::toROSMsg(*laserCloudSurfFromMapDS, cloudMsgTemp);
             cloudMsgTemp.header.stamp = ros::Time().fromSec(timeLaserOdometry);
-            cloudMsgTemp.header.frame_id = "/camera_init";
+            cloudMsgTemp.header.frame_id = "camera_init";
             pubRecentKeyFrames.publish(cloudMsgTemp);
         }
 
         if (pubRegisteredCloud.getNumSubscribers() != 0){
             pcl::PointCloud<PointType>::Ptr cloudOut(new pcl::PointCloud<PointType>());
             PointTypePose thisPose6D = trans2PointTypePose(transformTobeMapped);
+            /*
             *cloudOut += *transformPointCloud(laserCloudCornerLastDS,  &thisPose6D);
             *cloudOut += *transformPointCloud(laserCloudSurfTotalLast, &thisPose6D);
+            */
+            *cloudOut += *laserCloudCornerLastDS;
+            *cloudOut += *laserCloudSurfTotalLast;
             
             sensor_msgs::PointCloud2 cloudMsgTemp;
             pcl::toROSMsg(*cloudOut, cloudMsgTemp);
             cloudMsgTemp.header.stamp = ros::Time().fromSec(timeLaserOdometry);
-            cloudMsgTemp.header.frame_id = "/camera_init";
+            cloudMsgTemp.header.frame_id = "aft_mapped";
             pubRegisteredCloud.publish(cloudMsgTemp);
         } 
     }
@@ -790,7 +794,7 @@ public:
         sensor_msgs::PointCloud2 cloudMsgTemp;
         pcl::toROSMsg(*globalMapKeyFramesDS, cloudMsgTemp);
         cloudMsgTemp.header.stamp = ros::Time().fromSec(timeLaserOdometry);
-        cloudMsgTemp.header.frame_id = "/camera_init";
+        cloudMsgTemp.header.frame_id = "camera_init";
         pubLaserCloudSurround.publish(cloudMsgTemp);  
 
         globalMapKeyPoses->clear();
@@ -864,7 +868,7 @@ public:
             sensor_msgs::PointCloud2 cloudMsgTemp;
             pcl::toROSMsg(*nearHistorySurfKeyFrameCloudDS, cloudMsgTemp);
             cloudMsgTemp.header.stamp = ros::Time().fromSec(timeLaserOdometry);
-            cloudMsgTemp.header.frame_id = "/camera_init";
+            cloudMsgTemp.header.frame_id = "camera_init";
             pubHistoryKeyFrames.publish(cloudMsgTemp);
         }
 
@@ -910,7 +914,7 @@ public:
             sensor_msgs::PointCloud2 cloudMsgTemp;
             pcl::toROSMsg(*closed_cloud, cloudMsgTemp);
             cloudMsgTemp.header.stamp = ros::Time().fromSec(timeLaserOdometry);
-            cloudMsgTemp.header.frame_id = "/camera_init";
+            cloudMsgTemp.header.frame_id = "camera_init";
             pubIcpKeyFrames.publish(cloudMsgTemp);
         }   
         /*
