@@ -30,8 +30,19 @@
 //   J. Zhang and S. Singh. LOAM: Lidar Odometry and Mapping in Real-time.
 //     Robotics: Science and Systems Conference (RSS). Berkeley, CA, July 2014.
 
-#include "utility.h"
 
+// For transform support
+#include "tf2/LinearMath/Transform.h"
+#include "tf2/convert.h"
+#include "tf2/utils.h"
+#include <tf2_ros/transform_listener.h>
+#include <tf2_ros/transform_broadcaster.h>
+#include <geometry_msgs/TransformStamped.h>
+#include <geometry_msgs/Twist.h>
+
+
+
+#include "utility.h"
 class TransformFusion{
 
 private:
@@ -44,20 +55,23 @@ private:
   
 
     nav_msgs::Odometry laserOdometry2;
-    tf::StampedTransform laserOdometryTrans2;
-    tf::TransformBroadcaster tfBroadcaster2;
+    geometry_msgs::TransformStamped laserOdometryTrans2;
+    geometry_msgs::TransformStamped map_2_camera_init_Trans;
 
-    tf::StampedTransform map_2_camera_init_Trans;
-    tf::TransformBroadcaster tfBroadcasterMap2CameraInit;
+    geometry_msgs::TransformStamped camera_2_base_link_Trans;
+    
+    tf2_ros::TransformBroadcaster br;
 
-    tf::StampedTransform camera_2_base_link_Trans;
-    tf::TransformBroadcaster tfBroadcasterCamera2Baselink;
+    tf2_ros::Buffer tfBuffer;
+    tf2_ros::TransformListener* tfListener;
 
     float transformSum[6];
     float transformIncre[6];
     float transformMapped[6];
     float transformBefMapped[6];
     float transformAftMapped[6];
+    unsigned long aftMappedCount = 0;
+    unsigned long aftMappedPubCount = 0;
 
     std_msgs::Header currentHeader;
 
@@ -72,14 +86,16 @@ public:
         laserOdometry2.header.frame_id = "camera_init";
         laserOdometry2.child_frame_id = "camera";
 
-        laserOdometryTrans2.frame_id_ = "camera_init";
-        laserOdometryTrans2.child_frame_id_ = "camera";
+        laserOdometryTrans2.header.frame_id = "camera_init";
+        laserOdometryTrans2.child_frame_id = "camera";
 
-        map_2_camera_init_Trans.frame_id_ = "map";
-        map_2_camera_init_Trans.child_frame_id_ = "camera_init";
+        map_2_camera_init_Trans.header.frame_id = "map";
+        map_2_camera_init_Trans.child_frame_id = "camera_init";
 
-        camera_2_base_link_Trans.frame_id_ = "camera";
-        camera_2_base_link_Trans.child_frame_id_ = "base_link";
+        camera_2_base_link_Trans.header.frame_id = "camera";
+        camera_2_base_link_Trans.child_frame_id = "base_link";
+        
+        tfListener = new tf2_ros::TransformListener(tfBuffer);
 
         for (int i = 0; i < 6; ++i)
         {
@@ -197,22 +213,71 @@ public:
         transformAssociateToMap();
 
         geoQuat = tf::createQuaternionMsgFromRollPitchYaw
-                  (transformMapped[2], -transformMapped[0], -transformMapped[1]);
+                  (transformAftMapped[2], -transformAftMapped[0], -transformAftMapped[1]);
 
         laserOdometry2.header.stamp = laserOdometry->header.stamp;
         laserOdometry2.pose.pose.orientation.x = -geoQuat.y;
         laserOdometry2.pose.pose.orientation.y = -geoQuat.z;
         laserOdometry2.pose.pose.orientation.z = geoQuat.x;
         laserOdometry2.pose.pose.orientation.w = geoQuat.w;
-        laserOdometry2.pose.pose.position.x = transformMapped[3];
-        laserOdometry2.pose.pose.position.y = transformMapped[4];
-        laserOdometry2.pose.pose.position.z = transformMapped[5];
+        laserOdometry2.pose.pose.position.x = transformAftMapped[3];
+        laserOdometry2.pose.pose.position.y = transformAftMapped[4];
+        laserOdometry2.pose.pose.position.z = transformAftMapped[5];
         pubLaserOdometry2.publish(laserOdometry2);
 
-        laserOdometryTrans2.stamp_ = laserOdometry->header.stamp;
-        laserOdometryTrans2.setRotation(tf::Quaternion(-geoQuat.y, -geoQuat.z, geoQuat.x, geoQuat.w));
-        laserOdometryTrans2.setOrigin(tf::Vector3(transformMapped[3], transformMapped[4], transformMapped[5]));
-        tfBroadcaster2.sendTransform(laserOdometryTrans2);
+
+
+            
+        laserOdometryTrans2.header.stamp = laserOdometry->header.stamp;
+
+        laserOdometryTrans2.transform.translation.x = transformAftMapped[3];
+        laserOdometryTrans2.transform.translation.y = transformAftMapped[4];
+        laserOdometryTrans2.transform.translation.z = transformAftMapped[5];
+        laserOdometryTrans2.transform.rotation.x = -geoQuat.y;
+        laserOdometryTrans2.transform.rotation.y =-geoQuat.z;
+        laserOdometryTrans2.transform.rotation.z = geoQuat.x;
+        laserOdometryTrans2.transform.rotation.w = geoQuat.w;
+
+
+        // subtracting base to odom from map to base and send map to odom instead
+        geometry_msgs::PoseStamped camera_init_to_base;
+        try
+        {
+
+            tf2::Quaternion q(laserOdometryTrans2.transform.rotation.x,
+            laserOdometryTrans2.transform.rotation.y,
+            laserOdometryTrans2.transform.rotation.z,
+            laserOdometryTrans2.transform.rotation.w);
+
+        tf2::Transform tmp_tf(q, tf2::Vector3(laserOdometryTrans2.transform.translation.x,
+                                              laserOdometryTrans2.transform.translation.y,
+                                              laserOdometryTrans2.transform.translation.z));
+
+            geometry_msgs::PoseStamped tmp_tf_stamped;
+            tmp_tf_stamped.header.frame_id = "camera";
+            tmp_tf_stamped.header.stamp = laserOdometry->header.stamp;
+            tf2::toMsg(tmp_tf.inverse(), tmp_tf_stamped.pose);
+
+            tfBuffer.transform(tmp_tf_stamped, camera_init_to_base, "X1/base_link");
+        }
+        catch(tf2::TransformException)
+        {
+            ROS_DEBUG("Failed to subtract base to odom transform");
+            return;
+        }
+        tf2::Transform corrected_tf;
+        tf2::convert(camera_init_to_base.pose, corrected_tf);
+
+        laserOdometryTrans2.header.frame_id = "camera_init";
+        laserOdometryTrans2.child_frame_id = "X1/base_link";
+        tf2::convert(corrected_tf.inverse(), laserOdometryTrans2.transform);
+        
+
+
+        if (aftMappedCount!=aftMappedPubCount){
+            br.sendTransform(laserOdometryTrans2);
+            aftMappedPubCount = aftMappedCount;
+        }
     }
 
     void odomAftMappedHandler(const nav_msgs::Odometry::ConstPtr& odomAftMapped)
@@ -236,6 +301,7 @@ public:
         transformBefMapped[3] = odomAftMapped->twist.twist.linear.x;
         transformBefMapped[4] = odomAftMapped->twist.twist.linear.y;
         transformBefMapped[5] = odomAftMapped->twist.twist.linear.z;
+        aftMappedCount++;
     }
 };
 
