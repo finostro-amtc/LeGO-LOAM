@@ -435,9 +435,9 @@ public:
         tf::quaternionMsgToTF(imuIn->orientation, orientation);
         tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
 
-        float accX = imuIn->linear_acceleration.y - sin(roll) * cos(pitch) * 9.81;
-        float accY = imuIn->linear_acceleration.z - cos(roll) * cos(pitch) * 9.81;
-        float accZ = imuIn->linear_acceleration.x + sin(pitch) * 9.81;
+        float accX = 0;//imuIn->linear_acceleration.y - sin(roll) * cos(pitch) * 9.81;
+        float accY = 0;//imuIn->linear_acceleration.z - cos(roll) * cos(pitch) * 9.81;
+        float accZ = 0;//imuIn->linear_acceleration.x + sin(pitch) * 9.81;
 
         imuPointerLast = (imuPointerLast + 1) % imuQueLength;
 
@@ -447,9 +447,9 @@ public:
         imuPitch[imuPointerLast] = pitch;
         imuYaw[imuPointerLast] = yaw;
 
-        imuAccX[imuPointerLast] = accX;
-        imuAccY[imuPointerLast] = accY;
-        imuAccZ[imuPointerLast] = accZ;
+        imuAccX[imuPointerLast] = 0;//accX;
+        imuAccY[imuPointerLast] = 0;//accY;
+        imuAccZ[imuPointerLast] = 0;//accZ;
 
         imuAngularVeloX[imuPointerLast] = imuIn->angular_velocity.x;
         imuAngularVeloY[imuPointerLast] = imuIn->angular_velocity.y;
@@ -520,6 +520,7 @@ public:
             }
 
             float relTime = (ori - segInfo.startOrientation) / segInfo.orientationDiff;
+            //float relTime = ((float)point.t)*1.0e-12/scanPeriod;
             point.intensity = int(segmentedCloud->points[i].intensity) + scanPeriod * relTime;
 
             if (imuPointerLast >= 0) {
@@ -667,13 +668,26 @@ public:
                     cloudNeighborPicked[i + 5] = 1;
                     cloudNeighborPicked[i + 6] = 1;
                 }
+            }else{
+                    cloudNeighborPicked[i - 5] = 1;
+                    cloudNeighborPicked[i - 4] = 1;
+                    cloudNeighborPicked[i - 3] = 1;
+                    cloudNeighborPicked[i - 2] = 1;
+                    cloudNeighborPicked[i - 1] = 1;
+                    cloudNeighborPicked[i] = 1;
+                    cloudNeighborPicked[i + 1] = 1;
+                    cloudNeighborPicked[i + 2] = 1;
+                    cloudNeighborPicked[i + 3] = 1;
+                    cloudNeighborPicked[i + 4] = 1;
+                    cloudNeighborPicked[i + 5] = 1;
+                    cloudNeighborPicked[i + 6] = 1;
             }
 
             float diff1 = std::abs(float(segInfo.segmentedCloudRange[i-1] - segInfo.segmentedCloudRange[i]));
             float diff2 = std::abs(float(segInfo.segmentedCloudRange[i+1] - segInfo.segmentedCloudRange[i]));
 
-            if (diff1 > 0.02 * segInfo.segmentedCloudRange[i] && diff2 > 0.02 * segInfo.segmentedCloudRange[i])
-                cloudNeighborPicked[i] = 1;
+            //if (diff1 > 0.02 * segInfo.segmentedCloudRange[i] && diff2 > 0.02 * segInfo.segmentedCloudRange[i])
+            //    cloudNeighborPicked[i] = 1;
         }
     }
 

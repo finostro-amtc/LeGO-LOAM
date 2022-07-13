@@ -878,6 +878,7 @@ public:
 
     void performLoopClosure(){
 
+        ROS_WARN("LOOP_CHECK");
         if (cloudKeyPoses3D->points.empty() == true)
             return;
         // try to find close key frame if there are any
@@ -936,6 +937,7 @@ public:
         float noiseScore = icp.getFitnessScore();
         Vector6 << noiseScore, noiseScore, noiseScore, noiseScore, noiseScore, noiseScore;
         constraintNoise = noiseModel::Diagonal::Variances(Vector6);
+        ROS_WARN("LOOP_CLOSURE");
         /* 
         	add constraints
         	*/

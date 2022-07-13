@@ -2,6 +2,7 @@
 #define _UTILITY_LIDAR_ODOMETRY_H_
 
 
+
 #include <ros/ros.h>
 
 #include <sensor_msgs/Imu.h>
@@ -10,21 +11,32 @@
 
 #include "cloud_msgs/cloud_info.h"
 
-#include <opencv2/opencv.hpp>
+
+
+#define PCL_NO_PRECOMPILE
 
 #include <pcl/point_cloud.h>
 #include <pcl/point_types.h>
 #include <pcl_ros/point_cloud.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/range_image/range_image.h>
+#include <pcl/range_image/impl/range_image.hpp>
 #include <pcl/filters/filter.h>
+#include <pcl/filters/impl/filter.hpp>
 #include <pcl/filters/voxel_grid.h>
+#include <pcl/filters/impl/voxel_grid.hpp>
 #include <pcl/kdtree/kdtree_flann.h>
+#include <pcl/kdtree/impl/kdtree_flann.hpp>
 #include <pcl/common/common.h>
+#include <pcl/common/impl/common.hpp>
 #include <pcl/registration/icp.h>
+#include <pcl/registration/impl/icp.hpp>
 
 #include <tf/transform_broadcaster.h>
 #include <tf/transform_datatypes.h>
+ 
+ 
+#include <opencv2/opencv.hpp>
  
 #include <vector>
 #include <cmath>
@@ -48,8 +60,41 @@
 
 using namespace std;
 
-typedef pcl::PointXYZI  PointType;
 
+
+
+
+namespace ouster_ros {
+
+struct EIGEN_ALIGN16 Point {
+    PCL_ADD_POINT4D;
+    float intensity;
+    uint32_t t;
+    uint16_t reflectivity;
+    uint8_t ring;
+    uint16_t ambient;
+    uint32_t range;
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+};
+}  // namespace ouster_ros
+
+// clang-format off
+POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
+    (float, x, x)
+    (float, y, y)
+    (float, z, z)
+    (float, intensity, intensity)
+    // use std::uint32_t to avoid conflicting with pcl::uint32_t
+    (std::uint32_t, t, t)
+    (std::uint16_t, reflectivity, reflectivity)
+    (std::uint8_t, ring, ring)
+    (std::uint16_t, ambient, ambient)
+    (std::uint32_t, range, range)
+)
+
+
+
+typedef ouster_ros::Point  PointType;
 extern const string pointCloudTopic = "/velodyne_points";
 extern const string imuTopic = "/imu/data";
 
@@ -60,13 +105,14 @@ extern const string fileDirectory = "/tmp/";
 extern const bool useCloudRing = true; // if true, ang_res_y and ang_bottom are not used
 
 // VLP-16
+/*
 extern const int N_SCAN = 16;
 extern const int Horizon_SCAN = 3600;
 extern const float ang_res_x = 0.1;
 extern const float ang_res_y = 2.0;
 extern const float ang_bottom = 15.0+0.1;
 extern const int groundScanInd = 7;
-
+*/
 // HDL-32E
 // extern const int N_SCAN = 32;
 // extern const int Horizon_SCAN = 1800;
@@ -93,6 +139,16 @@ extern const int groundScanInd = 7;
 // extern const float ang_bottom = 16.6+0.1;
 // extern const int groundScanInd = 7;
 
+// Ouster users may need to uncomment line 159 in imageProjection.cpp
+// Usage of Ouster imu data is not fully supported yet (LeGO-LOAM needs 9-DOF IMU), please just publish point cloud data
+// Ouster OS2-32 below horizon version
+ extern const int N_SCAN = 32;
+ extern const int Horizon_SCAN = 2048;
+ extern const float ang_res_x = 360.0/float(Horizon_SCAN);
+ extern const float ang_res_y = 22.5/float(N_SCAN-1);
+ extern const float ang_bottom = 22.5;
+ extern const int groundScanInd = 31;
+
 // Ouster OS1-64
 // extern const int N_SCAN = 64;
 // extern const int Horizon_SCAN = 1024;
@@ -109,8 +165,8 @@ extern const int systemDelay = 0;
 extern const int imuQueLength = 200;
 
 extern const float sensorMinimumRange = 1.0;
-extern const float sensorMountAngle = 0.043982;
-extern const float segmentTheta = 60.0/180.0*M_PI; // decrese this value may improve accuracy
+extern const float sensorMountAngle = 0.0;
+extern const float segmentTheta = 20.0/180.0*M_PI; // decrese this value may improve accuracy
 extern const int segmentValidPointNum = 5;
 extern const int segmentValidLineNum = 3;
 extern const float segmentAlphaX = ang_res_x / 180.0 * M_PI;
