@@ -7,8 +7,9 @@
   
     <remap from="/velodyne_points" to="/MODELING/front_laser_3d_sensor/points_processed"/>
     <remap from="/imu/data" to="/X1/imu/data"/>
-    <!--- Run Rviz-->
+    <!--- Run Rviz
     <node pkg="rviz" type="rviz" name="rviz" args="-d $(find lego_loam)/launch/test.rviz" />
+    -->
 
     <!--- TF 
     <node pkg="tf" type="static_transform_publisher" name="camera_init_to_map"  args="0 0 2.0 1.570795   0        1.570795 map    camera_init 10" />
