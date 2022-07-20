@@ -258,7 +258,7 @@ public:
             tmp_tf_stamped.header.stamp = laserOdometry->header.stamp;
             tf2::toMsg(tmp_tf.inverse(), tmp_tf_stamped.pose);
 
-            tfBuffer.transform(tmp_tf_stamped, camera_init_to_base, "X1/base_link");
+            tfBuffer.transform(tmp_tf_stamped, camera_init_to_base, "base_link");
         }
         catch(tf2::TransformException)
         {
@@ -269,7 +269,7 @@ public:
         tf2::convert(camera_init_to_base.pose, corrected_tf);
 
         laserOdometryTrans2.header.frame_id = "camera_init";
-        laserOdometryTrans2.child_frame_id = "X1/base_link";
+        laserOdometryTrans2.child_frame_id = "base_link";
         tf2::convert(corrected_tf.inverse(), laserOdometryTrans2.transform);
         
 
