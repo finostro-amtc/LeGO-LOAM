@@ -159,7 +159,7 @@ typedef PointXYZIRPYT  PointTypePose;
 
 
 //typedef ouster_ros::Point  PointType;
-typedef ouster_ros::Point  PointType;
+typedef PointXYZIR  PointType;
 extern const string pointCloudTopic = "/velodyne_points";
 extern const string imuTopic = "/imu/data";
 

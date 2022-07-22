@@ -40,9 +40,15 @@ Visualization Manager:
       Frame Timeout: 15
       Frames:
         All Enabled: false
+        X1:
+          Value: true
         X1/base_link:
           Value: true
+        X1/base_link/front_camera:
+          Value: true
         X1/base_link/front_laser_2d_sensor:
+          Value: true
+        X1/base_link/rear_camera:
           Value: true
         X1/base_link/rear_laser_2d_sensor:
           Value: true
@@ -50,27 +56,17 @@ Visualization Manager:
           Value: true
         X1/bucket_mobile_link:
           Value: true
-        X1/bucket_tip_link:
-          Value: true
         X1/front_base_link:
           Value: true
         X1/front_base_link/front_laser_3d_sensor:
           Value: true
-        X1/front_laser_2d_sensor:
-          Value: true
-        X1/front_laser_3d_imu:
-          Value: true
-        X1/front_laser_3d_laser:
-          Value: true
-        X1/front_laser_3d_sensor:
+        X1/front_base_link/imu_sensor:
           Value: true
         X1/front_left_wheel:
           Value: true
         X1/front_right_wheel:
           Value: true
-        X1/front_tag_base_link:
-          Value: true
-        X1/rear_laser_2d_sensor:
+        X1/odom:
           Value: true
         X1/rear_left_wheel:
           Value: true
@@ -84,9 +80,9 @@ Visualization Manager:
           Value: true
         camera_init:
           Value: true
-        laser_odom:
+        cave_circuit_practice_01:
           Value: true
-        map:
+        laser_odom:
           Value: true
       Marker Alpha: 1
       Marker Scale: 10
@@ -95,36 +91,43 @@ Visualization Manager:
       Show Axes: true
       Show Names: true
       Tree:
-        camera:
-          base_link:
+        X1/odom:
+          X1:
             X1/base_link:
+              X1/base_link/front_camera:
+                {}
               X1/base_link/front_laser_2d_sensor:
-                X1/front_laser_2d_sensor:
-                  {}
+                {}
+              X1/base_link/rear_camera:
+                {}
               X1/base_link/rear_laser_2d_sensor:
-                X1/rear_laser_2d_sensor:
-                  {}
-              X1/front_base_link:
-                X1/bucket_arm_link:
-                  X1/bucket_mobile_link:
-                    X1/bucket_tip_link:
-                      {}
-                X1/front_base_link/front_laser_3d_sensor:
-                  X1/front_laser_3d_sensor:
-                    X1/front_laser_3d_imu:
-                      {}
-                    X1/front_laser_3d_laser:
-                      {}
-                X1/front_left_wheel:
-                  {}
-                X1/front_right_wheel:
-                  {}
-                X1/front_tag_base_link:
-                  {}
-              X1/rear_left_wheel:
                 {}
-              X1/rear_right_wheel:
+            X1/bucket_arm_link:
+              {}
+            X1/bucket_mobile_link:
+              {}
+            X1/front_base_link:
+              X1/front_base_link/front_laser_3d_sensor:
                 {}
+              X1/front_base_link/imu_sensor:
+                {}
+            X1/front_left_wheel:
+              {}
+            X1/front_right_wheel:
+              {}
+            X1/rear_left_wheel:
+              {}
+            X1/rear_right_wheel:
+              {}
+            cave_circuit_practice_01:
+              camera_init:
+                aft_mapped:
+                  {}
+                base_link:
+                  camera:
+                    {}
+                laser_odom:
+                  {}
       Update Interval: 0
       Value: true
     - Alpha: 1
@@ -138,13 +141,13 @@ Visualization Manager:
       Value: false
     - Alpha: 1
       Class: rviz/Axes
-      Enabled: true
+      Enabled: false
       Length: 1
       Name: base_link
       Radius: 0.5
       Reference Frame: X1/base_link
       Show Trail: false
-      Value: true
+      Value: false
     - Alpha: 1
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
@@ -512,8 +515,8 @@ Visualization Manager:
     - Alpha: 0.5
       Autocompute Intensity Bounds: true
       Autocompute Value Bounds:
-        Max Value: 2.6374709606170654
-        Min Value: -2.4843556880950928
+        Max Value: 2.0970163345336914
+        Min Value: -2.7137246131896973
         Value: true
       Axis: Y
       Channel Name: intensity
@@ -585,81 +588,6 @@ Visualization Manager:
         Expand Link Details: false
         Expand Tree: false
         Link Tree Style: Links in Alphabetic Order
-        X1/base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/base_link/front_laser_2d_sensor:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/base_link/rear_laser_2d_sensor:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/bucket_arm_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/bucket_mobile_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/bucket_tip_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        X1/front_base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/front_base_link/front_laser_3d_sensor:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/front_laser_2d_sensor:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        X1/front_laser_3d_sensor:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        X1/front_left_wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/front_right_wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/front_tag_base_link:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        X1/rear_laser_2d_sensor:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-        X1/rear_left_wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
-        X1/rear_right_wheel:
-          Alpha: 1
-          Show Axes: false
-          Show Trail: false
-          Value: true
       Name: RobotModel
       Robot Description: X1/robot_description
       TF Prefix: ""
@@ -670,7 +598,7 @@ Visualization Manager:
   Global Options:
     Background Color: 0; 0; 0
     Default Light: true
-    Fixed Frame: base_link
+    Fixed Frame: camera_init
     Frame Rate: 30
   Name: root
   Tools:
@@ -682,7 +610,7 @@ Visualization Manager:
   Views:
     Current:
       Class: rviz/Orbit
-      Distance: 32.60663604736328
+      Distance: 181.96795654296875
       Enable Stereo Rendering:
         Stereo Eye Separation: 0.05999999865889549
         Stereo Focal Distance: 1
@@ -690,17 +618,17 @@ Visualization Manager:
         Value: false
       Field of View: 0.7853981852531433
       Focal Point:
-        X: 6.815162181854248
-        Y: -6.302274227142334
-        Z: -0.9377626180648804
+        X: -0.6337399482727051
+        Y: -24.694379806518555
+        Z: 20.840206146240234
       Focal Shape Fixed Size: false
       Focal Shape Size: 0.05000000074505806
       Invert Z Axis: false
       Name: Current View
       Near Clip Distance: 0.009999999776482582
-      Pitch: 0.2202025204896927
+      Pitch: -0.3552032709121704
       Target Frame: <Fixed Frame>
-      Yaw: 1.0067529678344727
+      Yaw: 1.6567516326904297
     Saved: ~
 Window Geometry:
   Displays:
@@ -710,7 +638,7 @@ Window Geometry:
     collapsed: false
   Hide Left Dock: false
   Hide Right Dock: false
-  QMainWindow State: 000000ff00000000fd00000004000000000000018e000003a8fc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003e000003a8000000ca00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000800480065006c0070000000032c000000ba0000006e00ffffff000000010000010f000003a8fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003e000003a8000000a600fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b20000000000000000000000020000073f00000039fc0100000003fb0000001600520061006e0067006500200049006d00610067006500000000000000073f0000000000000000fb0000000a0049006d0061006700650000000000000006100000000000000000fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073e0000003efc0100000002fb0000000800540069006d006500000000000000073e0000046300fffffffb0000000800540069006d00650100000000000004500000000000000000000003f3000003a800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
+  QMainWindow State: 000000ff00000000fd000000040000000000000233000003a8fc0200000009fb0000001200530065006c0065006300740069006f006e00000001e10000009b0000005c00fffffffb0000001e0054006f006f006c002000500072006f007000650072007400690065007302000001ed000001df00000185000000a3fb000000120056006900650077007300200054006f006f02000001df000002110000018500000122fb000000200054006f006f006c002000500072006f0070006500720074006900650073003203000002880000011d000002210000017afb000000100044006900730070006c006100790073010000003e000003a8000000ca00fffffffb0000002000730065006c0065006300740069006f006e00200062007500660066006500720200000138000000aa0000023a00000294fb00000014005700690064006500530074006500720065006f02000000e6000000d2000003ee0000030bfb0000000c004b0069006e0065006300740200000186000001060000030c00000261fb0000000800480065006c0070000000032c000000ba0000006e00ffffff000000010000010f000003a8fc0200000003fb0000001e0054006f006f006c002000500072006f00700065007200740069006500730100000041000000780000000000000000fb0000000a00560069006500770073010000003e000003a8000000a600fffffffb0000001200530065006c0065006300740069006f006e010000025a000000b20000000000000000000000020000073f00000039fc0100000003fb0000001600520061006e0067006500200049006d00610067006500000000000000073f0000000000000000fb0000000a0049006d0061006700650000000000000006100000000000000000fb0000000a00560069006500770073030000004e00000080000002e100000197000000030000073e0000003efc0100000002fb0000000800540069006d006500000000000000073e0000046300fffffffb0000000800540069006d006501000000000000045000000000000000000000034e000003a800000004000000040000000800000008fc0000000100000002000000010000000a0054006f006f006c00730100000000ffffffff0000000000000000
   Selection:
     collapsed: false
   Time:
@@ -721,4 +649,4 @@ Window Geometry:
     collapsed: false
   Width: 1692
   X: 1424
-  Y: 60
+  Y: 27
