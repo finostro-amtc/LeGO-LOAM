@@ -95,7 +95,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
 
 
 typedef ouster_ros::Point  PointType;
-extern const string pointCloudTopic = "/velodyne_points";
+extern const string pointCloudTopic = "input_points";
 extern const string imuTopic = "/imu/data";
 
 // Save pcd

@@ -93,7 +93,7 @@ public:
         map_2_camera_init_Trans.child_frame_id = "camera_init";
 
         camera_2_base_link_Trans.header.frame_id = "camera";
-        camera_2_base_link_Trans.child_frame_id = "base_link";
+        camera_2_base_link_Trans.child_frame_id = "X1/base_link";
         
         tfListener = new tf2_ros::TransformListener(tfBuffer);
 
