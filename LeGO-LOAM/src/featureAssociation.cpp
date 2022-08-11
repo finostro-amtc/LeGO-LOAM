@@ -33,12 +33,13 @@
 //      IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS). October 2018.
 
 #include "utility.h"
+#include <std_srvs/Trigger.h>
 
 class FeatureAssociation{
 
 private:
 
-	ros::NodeHandle nh;
+    ros::NodeHandle nh,nh_private;
 
     ros::Subscriber subLaserCloud;
     ros::Subscriber subLaserCloudInfo;
@@ -49,6 +50,9 @@ private:
     ros::Publisher pubCornerPointsLessSharp;
     ros::Publisher pubSurfPointsFlat;
     ros::Publisher pubSurfPointsLessFlat;
+
+
+    ros::ServiceServer service_activate,service_deactivate;
 
     pcl::PointCloud<PointType>::Ptr segmentedCloud;
     pcl::PointCloud<PointType>::Ptr outlierCloud;
@@ -184,42 +188,28 @@ private:
 public:
 
     FeatureAssociation():
-        nh("~")
+        nh(),nh_private("~")
         {
 
-        subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("/segmented_cloud", 1, &FeatureAssociation::laserCloudHandler, this);
-        subLaserCloudInfo = nh.subscribe<cloud_msgs::cloud_info>("/segmented_cloud_info", 1, &FeatureAssociation::laserCloudInfoHandler, this);
-        subOutlierCloud = nh.subscribe<sensor_msgs::PointCloud2>("/outlier_cloud", 1, &FeatureAssociation::outlierCloudHandler, this);
-        subImu = nh.subscribe<sensor_msgs::Imu>(imuTopic, 50, &FeatureAssociation::imuHandler, this);
 
-        pubCornerPointsSharp = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_sharp", 1);
-        pubCornerPointsLessSharp = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_less_sharp", 1);
-        pubSurfPointsFlat = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_flat", 1);
-        pubSurfPointsLessFlat = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_less_flat", 1);
+        pubCornerPointsSharp = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_sharp", 1);
+        pubCornerPointsLessSharp = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_less_sharp", 1);
+        pubSurfPointsFlat = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_flat", 1);
+        pubSurfPointsLessFlat = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_less_flat", 1);
 
-        pubLaserCloudCornerLast = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_corner_last", 2);
-        pubLaserCloudSurfLast = nh.advertise<sensor_msgs::PointCloud2>("/laser_cloud_surf_last", 2);
-        pubOutlierCloudLast = nh.advertise<sensor_msgs::PointCloud2>("/outlier_cloud_last", 2);
-        pubLaserOdometry = nh.advertise<nav_msgs::Odometry> ("/laser_odom_to_init", 5);
+        pubLaserCloudCornerLast = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_corner_last", 2);
+        pubLaserCloudSurfLast = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_surf_last", 2);
+        pubOutlierCloudLast = nh.advertise<sensor_msgs::PointCloud2>("outlier_cloud_last", 2);
+        pubLaserOdometry = nh.advertise<nav_msgs::Odometry> ("laser_odom_to_init", 5);
+        
+        service_activate = nh_private.advertiseService("activate", &FeatureAssociation::activate, this);
+        service_deactivate = nh_private.advertiseService("deactivate", &FeatureAssociation::deactivate, this);
         
         initializationValue();
     }
-
-    void initializationValue()
-    {
-        cloudCurvature = new float[N_SCAN*Horizon_SCAN];
-        cloudNeighborPicked = new int[N_SCAN*Horizon_SCAN];
-        cloudLabel = new int[N_SCAN*Horizon_SCAN];
-
-        pointSelCornerInd = new int[N_SCAN*Horizon_SCAN];
-        pointSearchCornerInd1 = new float[N_SCAN*Horizon_SCAN];
-        pointSearchCornerInd2 = new float[N_SCAN*Horizon_SCAN];
-
-        pointSelSurfInd = new int[N_SCAN*Horizon_SCAN];
-        pointSearchSurfInd1 = new float[N_SCAN*Horizon_SCAN];
-        pointSearchSurfInd2 = new float[N_SCAN*Horizon_SCAN];
-        pointSearchSurfInd3 = new float[N_SCAN*Horizon_SCAN];
-
+    void reset(){    
+        	
+       
         cloudSmoothness.resize(N_SCAN*Horizon_SCAN);
 
         downSizeFilter.setLeafSize(0.2, 0.2, 0.2);
@@ -302,16 +292,63 @@ public:
         kdtreeCornerLast.reset(new pcl::KdTreeFLANN<PointType>());
         kdtreeSurfLast.reset(new pcl::KdTreeFLANN<PointType>());
 
-        laserOdometry.header.frame_id = "camera_init";
+        laserOdometry.header.frame_id = "laser_init";
         laserOdometry.child_frame_id = "laser_odom";
 
-        laserOdometryTrans.frame_id_ = "camera_init";
+        laserOdometryTrans.frame_id_ = "laser_init";
         laserOdometryTrans.child_frame_id_ = "laser_odom";
         
         isDegenerate = false;
         matP = cv::Mat(6, 6, CV_32F, cv::Scalar::all(0));
 
         frameCount = skipFrameNum;
+
+    }
+
+
+    bool activate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+
+       
+        subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("segmented_cloud", 1, &FeatureAssociation::laserCloudHandler, this);
+        subLaserCloudInfo = nh.subscribe<cloud_msgs::cloud_info>("segmented_cloud_info", 1, &FeatureAssociation::laserCloudInfoHandler, this);
+        subOutlierCloud = nh.subscribe<sensor_msgs::PointCloud2>("outlier_cloud", 1, &FeatureAssociation::outlierCloudHandler, this);
+        subImu = nh.subscribe<sensor_msgs::Imu>(imuTopic, 50, &FeatureAssociation::imuHandler, this);
+
+        reset();
+
+        res.success = true;
+        return true;
+
+    }
+    bool deactivate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+
+
+        subLaserCloud.shutdown ();
+        subLaserCloudInfo.shutdown ();
+        subOutlierCloud.shutdown ();
+        subImu.shutdown ();
+       
+        res.success = true;
+        return true;
+
+    }
+    void initializationValue()
+    {
+        cloudCurvature = new float[N_SCAN*Horizon_SCAN];
+        cloudNeighborPicked = new int[N_SCAN*Horizon_SCAN];
+        cloudLabel = new int[N_SCAN*Horizon_SCAN];
+
+        pointSelCornerInd = new int[N_SCAN*Horizon_SCAN];
+        pointSearchCornerInd1 = new float[N_SCAN*Horizon_SCAN];
+        pointSearchCornerInd2 = new float[N_SCAN*Horizon_SCAN];
+
+        pointSelSurfInd = new int[N_SCAN*Horizon_SCAN];
+        pointSearchSurfInd1 = new float[N_SCAN*Horizon_SCAN];
+        pointSearchSurfInd2 = new float[N_SCAN*Horizon_SCAN];
+        pointSearchSurfInd3 = new float[N_SCAN*Horizon_SCAN];
+
+
+        reset();
     }
 
     void updateImuRollPitchYawStartSinCos(){
@@ -1844,7 +1881,7 @@ public:
         /**
         	1. Feature Extraction
         */
-        adjustDistortion();
+        //adjustDistortion();
 
         calculateSmoothness();
 

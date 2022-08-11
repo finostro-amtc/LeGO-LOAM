@@ -33,11 +33,12 @@
 //      IEEE/RSJ International Conference on Intelligent Robots and Systems (IROS). October 2018.
 
 #include "utility.h"
+#include <std_srvs/Trigger.h>
 
 class ImageProjection{
 private:
 
-    ros::NodeHandle nh;
+    ros::NodeHandle nh,nh_private;
 
     ros::Subscriber subLaserCloud;
     
@@ -49,6 +50,9 @@ private:
     ros::Publisher pubSegmentedCloudPure;
     ros::Publisher pubSegmentedCloudInfo;
     ros::Publisher pubOutlierCloud;
+
+
+    ros::ServiceServer service_activate,service_deactivate;
 
     pcl::PointCloud<PointType>::Ptr laserCloudIn;
     pcl::PointCloud<ouster_ros::Point>::Ptr laserCloudInRing;
@@ -84,9 +88,12 @@ private:
 
 public:
     ImageProjection():
-        nh("~"){
+        nh(),nh_private("~")
+        {
 
-        subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(pointCloudTopic, 1, &ImageProjection::cloudHandler, this);
+        service_activate = nh_private.advertiseService("activate", &ImageProjection::activate, this);
+        service_deactivate = nh_private.advertiseService("deactivate", &ImageProjection::deactivate, this);
+
 
         pubFullCloud = nh.advertise<sensor_msgs::PointCloud2> ("full_cloud_projected", 1);
         pubFullInfoCloud = nh.advertise<sensor_msgs::PointCloud2> ("full_cloud_info", 1);
@@ -104,6 +111,37 @@ public:
 
         allocateMemory();
         resetParameters();
+        
+        std_srvs::Trigger srv;
+        activate(srv.request,srv.response);
+    }
+
+    void reset(){    
+        	
+        resetParameters();
+
+    }
+
+
+    bool activate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+
+       
+        subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>(pointCloudTopic, 1, &ImageProjection::cloudHandler, this);
+        
+        reset();
+
+        res.success = true;
+        return true;
+
+    }
+    bool deactivate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+
+
+       
+        subLaserCloud.shutdown ();
+        res.success = true;
+        return true;
+
     }
 
     void allocateMemory(){

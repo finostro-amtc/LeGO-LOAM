@@ -39,6 +39,7 @@
 #include <tf2_ros/transform_broadcaster.h>
 #include <geometry_msgs/TransformStamped.h>
 #include <geometry_msgs/Twist.h>
+#include <std_srvs/Trigger.h>
 
 
 
@@ -47,7 +48,8 @@ class TransformFusion{
 
 private:
 
-    ros::NodeHandle nh;
+    ros::NodeHandle nh,nh_private;
+
 
     ros::Publisher pubLaserOdometry2;
     ros::Subscriber subLaserOdometry;
@@ -56,11 +58,14 @@ private:
 
     nav_msgs::Odometry laserOdometry2;
     geometry_msgs::TransformStamped laserOdometryTrans2;
-    geometry_msgs::TransformStamped map_2_camera_init_Trans;
+    geometry_msgs::TransformStamped map_2_laser_init_Trans;
 
     geometry_msgs::TransformStamped camera_2_base_link_Trans;
     
     tf2_ros::TransformBroadcaster br;
+    ros::ServiceServer service_activate,service_deactivate;
+
+    bool broadcast_tf;
 
     tf2_ros::Buffer tfBuffer;
     tf2_ros::TransformListener* tfListener;
@@ -77,25 +82,35 @@ private:
 
 public:
 
-    TransformFusion(){
+    TransformFusion():nh(),nh_private("~"){
 
-        pubLaserOdometry2 = nh.advertise<nav_msgs::Odometry> ("/integrated_to_init", 5);
-        subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("/laser_odom_to_init", 5, &TransformFusion::laserOdometryHandler, this);
-        subOdomAftMapped = nh.subscribe<nav_msgs::Odometry>("/aft_mapped_to_init", 5, &TransformFusion::odomAftMappedHandler, this);
+        pubLaserOdometry2 = nh.advertise<nav_msgs::Odometry> ("integrated_to_init", 5);
 
-        laserOdometry2.header.frame_id = "camera_init";
+        service_activate = nh_private.advertiseService("activate", &TransformFusion::activate, this);
+        service_deactivate = nh_private.advertiseService("deactivate", &TransformFusion::deactivate, this);
+
+        nh.getParam("broadcast_tf",broadcast_tf);
+        
+
+        laserOdometry2.header.frame_id = "laser_init";
         laserOdometry2.child_frame_id = "camera";
 
-        laserOdometryTrans2.header.frame_id = "camera_init";
-        laserOdometryTrans2.child_frame_id = "camera";
+        laserOdometryTrans2.header.frame_id = "laser_init";
+        laserOdometryTrans2.child_frame_id = "X1/front_sensor_3d_sensor";
 
-        map_2_camera_init_Trans.header.frame_id = "map";
-        map_2_camera_init_Trans.child_frame_id = "camera_init";
+        map_2_laser_init_Trans.header.frame_id = "map";
+        map_2_laser_init_Trans.child_frame_id = "laser_init";
 
-        camera_2_base_link_Trans.header.frame_id = "camera";
+        camera_2_base_link_Trans.header.frame_id = "X1/front_sensor_3d_sensor";
         camera_2_base_link_Trans.child_frame_id = "X1/base_link";
         
         tfListener = new tf2_ros::TransformListener(tfBuffer);
+
+        reset();
+    }
+    /** reset all memory to intialize mapping from zero
+     * */
+    void reset(){
 
         for (int i = 0; i < 6; ++i)
         {
@@ -105,6 +120,27 @@ public:
             transformBefMapped[i] = 0;
             transformAftMapped[i] = 0;
         }
+        aftMappedCount = 0;
+        aftMappedPubCount = 0;
+
+    }
+
+    bool activate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+
+        subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("laser_odom_to_init", 5, &TransformFusion::laserOdometryHandler, this);
+        subOdomAftMapped = nh.subscribe<nav_msgs::Odometry>("aft_mapped_to_init", 5, &TransformFusion::odomAftMappedHandler, this);
+        reset();
+        res.success = true;
+        return true;
+
+    }
+    bool deactivate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+
+        subLaserOdometry.shutdown ();
+        subOdomAftMapped.shutdown ();
+        res.success = true;
+        return true;
+
     }
 
     void transformAssociateToMap()
@@ -196,6 +232,7 @@ public:
 
     void laserOdometryHandler(const nav_msgs::Odometry::ConstPtr& laserOdometry)
     {
+           // ROS_INFO("got odometry");
         currentHeader = laserOdometry->header;
 
         double roll, pitch, yaw;
@@ -240,7 +277,7 @@ public:
 
 
         // subtracting base to odom from map to base and send map to odom instead
-        geometry_msgs::PoseStamped camera_init_to_base;
+        geometry_msgs::PoseStamped laser_init_to_base;
         try
         {
 
@@ -254,27 +291,29 @@ public:
                                               laserOdometryTrans2.transform.translation.z));
 
             geometry_msgs::PoseStamped tmp_tf_stamped;
-            tmp_tf_stamped.header.frame_id = "camera";
+            tmp_tf_stamped.header.frame_id = "X1/front_laser_3d_sensor";
             tmp_tf_stamped.header.stamp = laserOdometry->header.stamp;
             tf2::toMsg(tmp_tf.inverse(), tmp_tf_stamped.pose);
 
-            tfBuffer.transform(tmp_tf_stamped, camera_init_to_base, "X1/base_link");
+            tfBuffer.transform(tmp_tf_stamped, laser_init_to_base, "X1/odom");
         }
         catch(tf2::TransformException)
         {
-            ROS_DEBUG("Failed to subtract base to odom transform");
+            ROS_INFO("Failed to subtract base to odom transform");
             return;
         }
         tf2::Transform corrected_tf;
-        tf2::convert(camera_init_to_base.pose, corrected_tf);
+        tf2::convert(laser_init_to_base.pose, corrected_tf);
 
-        laserOdometryTrans2.header.frame_id = "camera_init";
-        laserOdometryTrans2.child_frame_id = "X1/base_link";
+        laserOdometryTrans2.header.frame_id = "laser_init";
+        laserOdometryTrans2.child_frame_id = "X1/odom";
         tf2::convert(corrected_tf.inverse(), laserOdometryTrans2.transform);
+            //ROS_INFO("sent transform transform %ld   %ld", aftMappedPubCount , aftMappedCount);
         
 
 
         if (aftMappedCount!=aftMappedPubCount){
+            //ROS_INFO("sent transform transform");
             br.sendTransform(laserOdometryTrans2);
             aftMappedPubCount = aftMappedCount;
         }

@@ -96,7 +96,7 @@ POINT_CLOUD_REGISTER_POINT_STRUCT(ouster_ros::Point,
 
 typedef ouster_ros::Point  PointType;
 extern const string pointCloudTopic = "input_points";
-extern const string imuTopic = "/imu/data";
+extern const string imuTopic = "imu/data";
 
 // Save pcd
 extern const string fileDirectory = "/tmp/";
@@ -157,7 +157,6 @@ extern const int groundScanInd = 7;
 // extern const float ang_bottom = 16.6+0.1;
 // extern const int groundScanInd = 15;
 
-extern const bool loopClosureEnableFlag = true;
 extern const double mappingProcessInterval = 0.3;
 
 extern const float scanPeriod = 0.1;

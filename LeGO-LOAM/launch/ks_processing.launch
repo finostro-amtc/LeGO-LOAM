@@ -10,7 +10,7 @@
  <group ns="MODELING/3D_LASER_PROCESSING/">
     <node pkg="lego_loam" type="imageProjection"    name="imageProjection"    output="screen">
 
-    <remap from="~input_points" to="/MODELING/front_laser_3d_sensor/points_processed"/>
+    <remap from="input_points" to="/MODELING/front_laser_3d_sensor/points_processed"/>
     </node>
   </group>
 
