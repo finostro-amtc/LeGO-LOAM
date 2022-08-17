@@ -471,10 +471,14 @@ public:
         tf::Quaternion orientation;
         tf::quaternionMsgToTF(imuIn->orientation, orientation);
         tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
+        Eigen::Vector3d z_axis(0., 0., 1.);
+        Eigen::Quaterniond q(imuIn->orientation.w , imuIn->orientation.x , imuIn->orientation.y , imuIn->orientation.z);
+        Eigen::Vector3d g=q*z*-9.73;
 
-        float accX = 0;//imuIn->linear_acceleration.y - sin(roll) * cos(pitch) * 9.81;
-        float accY = 0;//imuIn->linear_acceleration.z - cos(roll) * cos(pitch) * 9.81;
-        float accZ = 0;//imuIn->linear_acceleration.x + sin(pitch) * 9.81;
+        
+        float accX = imuIn->linear_acceleration.x+g[0];//imuIn->linear_acceleration.y - sin(roll) * cos(pitch) * 9.81;
+        float accY = imuIn->linear_acceleration.y+g[1];//imuIn->linear_acceleration.z - cos(roll) * cos(pitch) * 9.81;
+        float accZ = imuIn->linear_acceleration.z+g[2];//imuIn->linear_acceleration.x + sin(pitch) * 9.81;
 
         imuPointerLast = (imuPointerLast + 1) % imuQueLength;
 
@@ -484,9 +488,9 @@ public:
         imuPitch[imuPointerLast] = pitch;
         imuYaw[imuPointerLast] = yaw;
 
-        imuAccX[imuPointerLast] = 0;//accX;
-        imuAccY[imuPointerLast] = 0;//accY;
-        imuAccZ[imuPointerLast] = 0;//accZ;
+        imuAccX[imuPointerLast] = accX;
+        imuAccY[imuPointerLast] = accY;
+        imuAccZ[imuPointerLast] = accZ;
 
         imuAngularVeloX[imuPointerLast] = imuIn->angular_velocity.x;
         imuAngularVeloY[imuPointerLast] = imuIn->angular_velocity.y;
@@ -1812,15 +1816,15 @@ public:
         updateImuRollPitchYawStartSinCos();
 
         int cornerPointsLessSharpNum = cornerPointsLessSharp->points.size();
-        for (int i = 0; i < cornerPointsLessSharpNum; i++) {
-            TransformToEnd(&cornerPointsLessSharp->points[i], &cornerPointsLessSharp->points[i]);
-        }
+        // for (int i = 0; i < cornerPointsLessSharpNum; i++) {
+        //     TransformToEnd(&cornerPointsLessSharp->points[i], &cornerPointsLessSharp->points[i]);
+        // }
 
 
-        int surfPointsLessFlatNum = surfPointsLessFlat->points.size();
-        for (int i = 0; i < surfPointsLessFlatNum; i++) {
-            TransformToEnd(&surfPointsLessFlat->points[i], &surfPointsLessFlat->points[i]);
-        }
+        // int surfPointsLessFlatNum = surfPointsLessFlat->points.size();
+        // for (int i = 0; i < surfPointsLessFlatNum; i++) {
+        //     TransformToEnd(&surfPointsLessFlat->points[i], &surfPointsLessFlat->points[i]);
+        // }
 
         pcl::PointCloud<PointType>::Ptr laserCloudTemp = cornerPointsLessSharp;
         cornerPointsLessSharp = laserCloudCornerLast;

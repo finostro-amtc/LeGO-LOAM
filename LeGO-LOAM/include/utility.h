@@ -56,6 +56,9 @@
 #include <thread>
 #include <mutex>
 
+#include <Eigen/Geometry> 
+
+
 #define PI 3.14159265
 
 using namespace std;
@@ -157,7 +160,7 @@ extern const int groundScanInd = 7;
 // extern const float ang_bottom = 16.6+0.1;
 // extern const int groundScanInd = 15;
 
-extern const double mappingProcessInterval = 0.3;
+extern const double mappingProcessInterval = 0.1;
 
 extern const float scanPeriod = 0.1;
 extern const int systemDelay = 0;
