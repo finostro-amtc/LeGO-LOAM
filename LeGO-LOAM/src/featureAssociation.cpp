@@ -473,7 +473,7 @@ public:
         tf::Matrix3x3(orientation).getRPY(roll, pitch, yaw);
         Eigen::Vector3d z_axis(0., 0., 1.);
         Eigen::Quaterniond q(imuIn->orientation.w , imuIn->orientation.x , imuIn->orientation.y , imuIn->orientation.z);
-        Eigen::Vector3d g=q*z*-9.73;
+        Eigen::Vector3d g=q*z_axis*-9.73;
 
         
         float accX = imuIn->linear_acceleration.x+g[0];//imuIn->linear_acceleration.y - sin(roll) * cos(pitch) * 9.81;
