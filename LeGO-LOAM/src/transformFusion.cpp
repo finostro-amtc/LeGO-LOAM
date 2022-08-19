@@ -127,10 +127,11 @@ public:
 
     bool activate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
 
+        reset();
         subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("laser_odom_to_init", 5, &TransformFusion::laserOdometryHandler, this);
         subOdomAftMapped = nh.subscribe<nav_msgs::Odometry>("aft_mapped_to_init", 5, &TransformFusion::odomAftMappedHandler, this);
-        reset();
         res.success = true;
+        ROS_WARN("Activate");
         return true;
 
     }
@@ -138,6 +139,8 @@ public:
 
         subLaserOdometry.shutdown ();
         subOdomAftMapped.shutdown ();
+        reset();
+        ROS_WARN("Deactivate");
         res.success = true;
         return true;
 

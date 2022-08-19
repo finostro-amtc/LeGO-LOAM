@@ -308,13 +308,15 @@ public:
 
     bool activate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
 
+        ROS_WARN("Activate");
+
        
+        reset();
+
         subLaserCloud = nh.subscribe<sensor_msgs::PointCloud2>("segmented_cloud", 1, &FeatureAssociation::laserCloudHandler, this);
         subLaserCloudInfo = nh.subscribe<cloud_msgs::cloud_info>("segmented_cloud_info", 1, &FeatureAssociation::laserCloudInfoHandler, this);
         subOutlierCloud = nh.subscribe<sensor_msgs::PointCloud2>("outlier_cloud", 1, &FeatureAssociation::outlierCloudHandler, this);
         subImu = nh.subscribe<sensor_msgs::Imu>(imuTopic, 50, &FeatureAssociation::imuHandler, this);
-
-        reset();
 
         res.success = true;
         return true;
@@ -323,11 +325,14 @@ public:
     bool deactivate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
 
 
+        ROS_WARN("Deactivate");
+
         subLaserCloud.shutdown ();
         subLaserCloudInfo.shutdown ();
         subOutlierCloud.shutdown ();
         subImu.shutdown ();
        
+        reset();
         res.success = true;
         return true;
 

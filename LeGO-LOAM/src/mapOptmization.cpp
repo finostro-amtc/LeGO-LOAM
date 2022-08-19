@@ -232,10 +232,7 @@ public:
     mapOptimization():
         nh(),nh_private("~")
     {
-    	ISAM2Params parameters;
-		parameters.relinearizeThreshold = 0.01;
-		parameters.relinearizeSkip = 1;
-    	isam = new ISAM2(parameters);
+
 
         pubKeyPoses = nh.advertise<sensor_msgs::PointCloud2>("key_pose_origin", 2);
         pubLaserCloudSurround = nh.advertise<sensor_msgs::PointCloud2>("laser_cloud_surround", 2);
@@ -272,6 +269,7 @@ public:
         loopClosureEnableFlag = false;
         
         allocateMemory();
+        reset();
     }
 
     void reset(){    	
@@ -281,89 +279,7 @@ public:
     	delete isam;
     	isam = new ISAM2(parameters);
 
-        allocateMemory();
-
-    }
-
-
-    bool activate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
-
-        subLaserCloudCornerLast = nh.subscribe<sensor_msgs::PointCloud2>("laser_cloud_corner_last", 2, &mapOptimization::laserCloudCornerLastHandler, this);
-        subLaserCloudSurfLast = nh.subscribe<sensor_msgs::PointCloud2>("laser_cloud_surf_last", 2, &mapOptimization::laserCloudSurfLastHandler, this);
-        subOutlierCloudLast = nh.subscribe<sensor_msgs::PointCloud2>("outlier_cloud_last", 2, &mapOptimization::laserCloudOutlierLastHandler, this);
-        subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("laser_odom_to_init", 5, &mapOptimization::laserOdometryHandler, this);
-        subImu = nh.subscribe<sensor_msgs::Imu> (imuTopic, 50, &mapOptimization::imuHandler, this);
-        
-        loopClosureEnableFlag = true;
-        reset();
-
-        res.success = true;
-        return true;
-
-    }
-    bool deactivate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
-
-
-        subLaserCloudCornerLast.shutdown ();
-        subLaserCloudSurfLast.shutdown ();
-        subOutlierCloudLast.shutdown ();
-        subLaserOdometry.shutdown ();
-        subImu.shutdown ();
-
-        loopClosureEnableFlag = false;
-        res.success = true;
-        return true;
-
-    }
-
-    void allocateMemory(){
-
-        cloudKeyPoses3D.reset(new pcl::PointCloud<PointType>());
-        cloudKeyPoses6D.reset(new pcl::PointCloud<PointTypePose>());
-
-        kdtreeSurroundingKeyPoses.reset(new pcl::KdTreeFLANN<PointType>());
-        kdtreeHistoryKeyPoses.reset(new pcl::KdTreeFLANN<PointType>());
-
-        surroundingKeyPoses.reset(new pcl::PointCloud<PointType>());
-        surroundingKeyPosesDS.reset(new pcl::PointCloud<PointType>());        
-
-        laserCloudCornerLast.reset(new pcl::PointCloud<PointType>()); // corner feature set from odoOptimization
-        laserCloudSurfLast.reset(new pcl::PointCloud<PointType>()); // surf feature set from odoOptimization
-        laserCloudCornerLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled corner featuer set from odoOptimization
-        laserCloudSurfLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled surf featuer set from odoOptimization
-        laserCloudOutlierLast.reset(new pcl::PointCloud<PointType>()); // corner feature set from odoOptimization
-        laserCloudOutlierLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled corner feature set from odoOptimization
-        laserCloudSurfTotalLast.reset(new pcl::PointCloud<PointType>()); // surf feature set from odoOptimization
-        laserCloudSurfTotalLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled surf featuer set from odoOptimization
-
-        laserCloudOri.reset(new pcl::PointCloud<PointType>());
-        coeffSel.reset(new pcl::PointCloud<PointType>());
-
-        laserCloudCornerFromMap.reset(new pcl::PointCloud<PointType>());
-        laserCloudSurfFromMap.reset(new pcl::PointCloud<PointType>());
-        laserCloudCornerFromMapDS.reset(new pcl::PointCloud<PointType>());
-        laserCloudSurfFromMapDS.reset(new pcl::PointCloud<PointType>());
-
-        kdtreeCornerFromMap.reset(new pcl::KdTreeFLANN<PointType>());
-        kdtreeSurfFromMap.reset(new pcl::KdTreeFLANN<PointType>());
-
-        
-        nearHistoryCornerKeyFrameCloud.reset(new pcl::PointCloud<PointType>());
-        nearHistoryCornerKeyFrameCloudDS.reset(new pcl::PointCloud<PointType>());
-        nearHistorySurfKeyFrameCloud.reset(new pcl::PointCloud<PointType>());
-        nearHistorySurfKeyFrameCloudDS.reset(new pcl::PointCloud<PointType>());
-
-        latestCornerKeyFrameCloud.reset(new pcl::PointCloud<PointType>());
-        latestSurfKeyFrameCloud.reset(new pcl::PointCloud<PointType>());
-        latestSurfKeyFrameCloudDS.reset(new pcl::PointCloud<PointType>());
-
-        kdtreeGlobalMap.reset(new pcl::KdTreeFLANN<PointType>());
-        globalMapKeyPoses.reset(new pcl::PointCloud<PointType>());
-        globalMapKeyPosesDS.reset(new pcl::PointCloud<PointType>());
-        globalMapKeyFrames.reset(new pcl::PointCloud<PointType>());
-        globalMapKeyFramesDS.reset(new pcl::PointCloud<PointType>());
-
-        timeLaserCloudCornerLast = 0;
+                timeLaserCloudCornerLast = 0;
         timeLaserCloudSurfLast = 0;
         timeLaserOdometry = 0;
         timeLaserCloudOutlierLast = 0;
@@ -422,6 +338,95 @@ public:
         aLoopIsClosed = false;
 
         latestFrameID = 0;
+
+
+        pointSearchInd.clear();
+        pointSearchSqDis.clear();
+        surroundingExistingKeyPosesID.clear();
+    }
+
+
+    bool activate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+
+        reset();
+
+        subLaserCloudCornerLast = nh.subscribe<sensor_msgs::PointCloud2>("laser_cloud_corner_last", 2, &mapOptimization::laserCloudCornerLastHandler, this);
+        subLaserCloudSurfLast = nh.subscribe<sensor_msgs::PointCloud2>("laser_cloud_surf_last", 2, &mapOptimization::laserCloudSurfLastHandler, this);
+        subOutlierCloudLast = nh.subscribe<sensor_msgs::PointCloud2>("outlier_cloud_last", 2, &mapOptimization::laserCloudOutlierLastHandler, this);
+        subLaserOdometry = nh.subscribe<nav_msgs::Odometry>("laser_odom_to_init", 5, &mapOptimization::laserOdometryHandler, this);
+        subImu = nh.subscribe<sensor_msgs::Imu> (imuTopic, 50, &mapOptimization::imuHandler, this);
+        
+        ROS_WARN("Activate");
+        loopClosureEnableFlag = true;
+        res.success = true;
+        return true;
+
+    }
+    bool deactivate(std_srvs::Trigger::Request &req, std_srvs::Trigger::Response &res){
+
+
+        subLaserCloudCornerLast.shutdown ();
+        subLaserCloudSurfLast.shutdown ();
+        subOutlierCloudLast.shutdown ();
+        subLaserOdometry.shutdown ();
+        subImu.shutdown ();
+
+        loopClosureEnableFlag = false;
+        reset();
+        ROS_WARN("Deactivate");
+        res.success = true;
+        return true;
+
+    }
+
+    void allocateMemory(){
+
+        cloudKeyPoses3D.reset(new pcl::PointCloud<PointType>());
+        cloudKeyPoses6D.reset(new pcl::PointCloud<PointTypePose>());
+
+        kdtreeSurroundingKeyPoses.reset(new pcl::KdTreeFLANN<PointType>());
+        kdtreeHistoryKeyPoses.reset(new pcl::KdTreeFLANN<PointType>());
+
+        surroundingKeyPoses.reset(new pcl::PointCloud<PointType>());
+        surroundingKeyPosesDS.reset(new pcl::PointCloud<PointType>());        
+
+        laserCloudCornerLast.reset(new pcl::PointCloud<PointType>()); // corner feature set from odoOptimization
+        laserCloudSurfLast.reset(new pcl::PointCloud<PointType>()); // surf feature set from odoOptimization
+        laserCloudCornerLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled corner featuer set from odoOptimization
+        laserCloudSurfLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled surf featuer set from odoOptimization
+        laserCloudOutlierLast.reset(new pcl::PointCloud<PointType>()); // corner feature set from odoOptimization
+        laserCloudOutlierLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled corner feature set from odoOptimization
+        laserCloudSurfTotalLast.reset(new pcl::PointCloud<PointType>()); // surf feature set from odoOptimization
+        laserCloudSurfTotalLastDS.reset(new pcl::PointCloud<PointType>()); // downsampled surf featuer set from odoOptimization
+
+        laserCloudOri.reset(new pcl::PointCloud<PointType>());
+        coeffSel.reset(new pcl::PointCloud<PointType>());
+
+        laserCloudCornerFromMap.reset(new pcl::PointCloud<PointType>());
+        laserCloudSurfFromMap.reset(new pcl::PointCloud<PointType>());
+        laserCloudCornerFromMapDS.reset(new pcl::PointCloud<PointType>());
+        laserCloudSurfFromMapDS.reset(new pcl::PointCloud<PointType>());
+
+        kdtreeCornerFromMap.reset(new pcl::KdTreeFLANN<PointType>());
+        kdtreeSurfFromMap.reset(new pcl::KdTreeFLANN<PointType>());
+
+        
+        nearHistoryCornerKeyFrameCloud.reset(new pcl::PointCloud<PointType>());
+        nearHistoryCornerKeyFrameCloudDS.reset(new pcl::PointCloud<PointType>());
+        nearHistorySurfKeyFrameCloud.reset(new pcl::PointCloud<PointType>());
+        nearHistorySurfKeyFrameCloudDS.reset(new pcl::PointCloud<PointType>());
+
+        latestCornerKeyFrameCloud.reset(new pcl::PointCloud<PointType>());
+        latestSurfKeyFrameCloud.reset(new pcl::PointCloud<PointType>());
+        latestSurfKeyFrameCloudDS.reset(new pcl::PointCloud<PointType>());
+
+        kdtreeGlobalMap.reset(new pcl::KdTreeFLANN<PointType>());
+        globalMapKeyPoses.reset(new pcl::PointCloud<PointType>());
+        globalMapKeyPosesDS.reset(new pcl::PointCloud<PointType>());
+        globalMapKeyFrames.reset(new pcl::PointCloud<PointType>());
+        globalMapKeyFramesDS.reset(new pcl::PointCloud<PointType>());
+
+
     }
 
     void transformAssociateToMap()
@@ -780,7 +785,9 @@ public:
         ros::Rate rate(0.2);
         while (ros::ok()){
             rate.sleep();
-            publishGlobalMap();
+
+            if (loopClosureEnableFlag)
+                publishGlobalMap();
         }
         // save final point cloud
         pcl::io::savePCDFileASCII(fileDirectory+"finalCloud.pcd", *globalMapKeyFramesDS);
@@ -856,13 +863,13 @@ public:
 
     void loopClosureThread(){
 
-        if (loopClosureEnableFlag == false)
-            return;
+
 
         ros::Rate rate(1);
         while (ros::ok()){
             rate.sleep();
-            performLoopClosure();
+            if (loopClosureEnableFlag)
+                performLoopClosure();
         }
     }
 
