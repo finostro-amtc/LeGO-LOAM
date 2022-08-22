@@ -269,6 +269,7 @@ public:
         loopClosureEnableFlag = false;
         
         allocateMemory();
+        isam= NULL;
         reset();
     }
 
@@ -276,7 +277,8 @@ public:
         ISAM2Params parameters;
 		parameters.relinearizeThreshold = 0.01;
 		parameters.relinearizeSkip = 1;
-    	delete isam;
+        if (isam)
+    	    delete isam;
     	isam = new ISAM2(parameters);
 
                 timeLaserCloudCornerLast = 0;
